@@ -1,0 +1,9 @@
+﻿
+
+------2014/6/23 22:37:58------
+
+
+System.Exception: 无效的 JSON 基元: System.IO.FileNotFoundException。
+   在 Common.JsonHelper.JsonToDictionary(String jsonData)
+   在 Common.AirlineHelper.GetCityNameZHAndPY(String cityCodeS, String cityCodeE, String& codeS_ZH, String& codeE_ZH, String& codeS_ZHPY, String& codeE_ZHPY)
+

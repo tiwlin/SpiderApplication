@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<TestRun id="f4a946c9-9fad-40d7-9f4f-dfb4292452b2" name="FrankieLin@P24302-14 2014-07-01 16:46:38" runUser="P24302-14\FrankieLin" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <TestSettings name="Local" id="d5433585-0d29-4301-95de-3408dcfff771">
+    <Description>These are default test settings for a local test run.</Description>
+    <Deployment enabled="false" runDeploymentRoot="FrankieLin_P24302-14 2014-07-01 16_46_38">
+      <DeploymentItem filename="D:\SourceCode\Project\SpiderApplication\Dll\Common.dll" />
+      <DeploymentItem filename="D:\SourceCode\Project\SpiderApplication\PageLoader\bin\Debug\PageLoader.dll" />
+      <DeploymentItem filename="D:\SourceCode\Project\SpiderApplication\SpiderLib\bin\Debug\SpiderLib.dll" />
+    </Deployment>
+    <Execution>
+      <TestTypeSpecific />
+      <AgentRule name="Execution Agents">
+      </AgentRule>
+    </Execution>
+  </TestSettings>
+  <Times creation="2014-07-01T16:46:38.2731747+08:00" queuing="2014-07-01T16:46:38.6764445+08:00" start="2014-07-01T16:46:38.7174714+08:00" finish="2014-07-01T16:46:39.2298135+08:00" />
+  <ResultSummary outcome="Completed">
+    <Counters total="1" executed="1" passed="1" error="0" failed="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+  </ResultSummary>
+  <TestDefinitions>
+    <UnitTest name="UnicodeToChs" storage="d:\sourcecode\project\spiderapplication\unittest\bin\debug\unittest.dll" id="dee4af07-b223-b4fa-f5ff-7cb76b405fbc">
+      <Execution id="67be2f14-5c8e-4cf0-8629-9eb640b25d8a" />
+      <TestMethod codeBase="D:/SourceCode/Project/SpiderApplication/UnitTest/bin/Debug/UnitTest.DLL" adapterTypeName="Microsoft.VisualStudio.TestTools.TestTypes.Unit.UnitTestAdapter, Microsoft.VisualStudio.QualityTools.Tips.UnitTest.Adapter, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" className="UnitTest.MeituanSourceModelTest, UnitTest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" name="UnicodeToChs" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <TestEntries>
+    <TestEntry testId="dee4af07-b223-b4fa-f5ff-7cb76b405fbc" executionId="67be2f14-5c8e-4cf0-8629-9eb640b25d8a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <Results>
+    <UnitTestResult executionId="67be2f14-5c8e-4cf0-8629-9eb640b25d8a" testId="dee4af07-b223-b4fa-f5ff-7cb76b405fbc" testName="UnicodeToChs" computerName="P24302-14" duration="00:00:00.0140070" startTime="2014-07-01T16:46:38.7304795+08:00" endTime="2014-07-01T16:46:39.1527621+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="67be2f14-5c8e-4cf0-8629-9eb640b25d8a">
+    </UnitTestResult>
+  </Results>
+</TestRun>

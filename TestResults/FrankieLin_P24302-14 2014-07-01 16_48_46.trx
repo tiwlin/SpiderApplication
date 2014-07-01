@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<TestRun id="ae6c51b7-9ba4-4cad-98b7-a2e939342a5f" name="FrankieLin@P24302-14 2014-07-01 16:48:46" runUser="P24302-14\FrankieLin" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <TestSettings name="Local" id="d5433585-0d29-4301-95de-3408dcfff771">
+    <Description>These are default test settings for a local test run.</Description>
+    <Deployment enabled="false" runDeploymentRoot="FrankieLin_P24302-14 2014-07-01 16_48_46">
+      <DeploymentItem filename="D:\SourceCode\Project\SpiderApplication\Dll\Common.dll" />
+      <DeploymentItem filename="D:\SourceCode\Project\SpiderApplication\PageLoader\bin\Debug\PageLoader.dll" />
+      <DeploymentItem filename="D:\SourceCode\Project\SpiderApplication\SpiderLib\bin\Debug\SpiderLib.dll" />
+    </Deployment>
+    <Execution>
+      <TestTypeSpecific />
+      <AgentRule name="Execution Agents">
+      </AgentRule>
+    </Execution>
+  </TestSettings>
+  <Times creation="2014-07-01T16:48:46.9761244+08:00" queuing="2014-07-01T16:48:47.3603805+08:00" start="2014-07-01T16:48:47.3994054+08:00" finish="2014-07-01T16:48:59.6635961+08:00" />
+  <ResultSummary outcome="Aborted">
+    <Counters total="1" executed="1" error="0" failed="0" timeout="0" aborted="1" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" passed="0" completed="0" inProgress="0" pending="0" />
+    <RunInfos>
+      <RunInfo computerName="P24302-14" outcome="Warning" timestamp="2014-07-01T16:48:47.0091459+08:00">
+        <Text>Deployment is currently disabled. The deployment item 'SpiderLib.dll' on test 'UnitTest.MeituanSourceModelTest.InitTest' was not deployed.</Text>
+      </RunInfo>
+    </RunInfos>
+  </ResultSummary>
+  <TestDefinitions>
+    <UnitTest name="InitTest" storage="d:\sourcecode\project\spiderapplication\unittest\bin\debug\unittest.dll" id="a56d1f19-c3b7-1882-0ba6-a13dc457bf40">
+      <DeploymentItems>
+        <DeploymentItem filename="SpiderLib.dll" />
+      </DeploymentItems>
+      <Execution id="c819ff98-2c9e-4f1e-965a-5baa18416f22" />
+      <TestMethod codeBase="D:/SourceCode/Project/SpiderApplication/UnitTest/bin/Debug/UnitTest.DLL" adapterTypeName="Microsoft.VisualStudio.TestTools.TestTypes.Unit.UnitTestAdapter, Microsoft.VisualStudio.QualityTools.Tips.UnitTest.Adapter, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" className="UnitTest.MeituanSourceModelTest, UnitTest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" name="InitTest" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <TestEntries>
+    <TestEntry testId="a56d1f19-c3b7-1882-0ba6-a13dc457bf40" executionId="c819ff98-2c9e-4f1e-965a-5baa18416f22" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <Results>
+    <UnitTestResult executionId="c819ff98-2c9e-4f1e-965a-5baa18416f22" testId="a56d1f19-c3b7-1882-0ba6-a13dc457bf40" testName="InitTest" computerName="P24302-14" duration="00:00:02.8619112" startTime="2014-07-01T16:48:47.4164168+08:00" endTime="2014-07-01T16:48:50.2783280+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Aborted" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c819ff98-2c9e-4f1e-965a-5baa18416f22">
+      <Output>
+        <ErrorInfo>
+          <Message>User aborted test run.</Message>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+  </Results>
+</TestRun>
