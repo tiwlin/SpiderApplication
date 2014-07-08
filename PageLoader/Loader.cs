@@ -65,60 +65,71 @@ namespace PageLoader
 		/// <returns></returns>
 		public bool ReadStream(PageUrl url, WebProxy proxy)
 		{
-			int work = 0, io = 0;
+            return ReadStream(url, "application/x-www-form-urlencoded", proxy);
+		}
 
-			ThreadPool.GetAvailableThreads(out work, out io);
-			//Console.WriteLine("工作线程总数：{0}，IO线程总数：{1}，当前ULR：{2}", work, io, url.Url);
-			//Console.WriteLine("读的线程ID：{0}", Thread.CurrentThread.ManagedThreadId);
 
-			bool isReadCompleted = true;
+        public bool ReadStream(PageUrl url)
+        {
+            return ReadStream(url, null);
+        }
 
-			///请求地址
-			HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url.Url);
+        public bool ReadStream(PageUrl url, string contentType, WebProxy proxy)
+        {
+            int work = 0, io = 0;
+            
+            ThreadPool.GetAvailableThreads(out work, out io);
+            //Console.WriteLine("工作线程总数：{0}，IO线程总数：{1}，当前ULR：{2}", work, io, url.Url);
+            //Console.WriteLine("读的线程ID：{0}", Thread.CurrentThread.ManagedThreadId);
 
+            bool isReadCompleted = true;
+
+            ///请求地址
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url.Url);
+
+            if (!string.IsNullOrEmpty(contentType))
+            {
+                request.ContentType = contentType;
+            }
+            
             if (proxy != null)
             {
                 request.Proxy = proxy;
             }
 
-			///发起请求
-			HttpWebResponse response = null;
+            ///发起请求
+            HttpWebResponse response = null;
 
-			try
-			{
-				response = (HttpWebResponse)request.GetResponse();
-				///获取返回来的数据
-				using (Stream st = response.GetResponseStream())
-				{
-					///创建流读取器
-					using (StreamReader sr = new StreamReader(st))
-					{
-						///读取返回的数据
-						string content = sr.ReadToEnd();
+            try
+            {
+                response = (HttpWebResponse)request.GetResponse();
+                ///获取返回来的数据
+                using (Stream st = response.GetResponseStream())
+                {
+                    ///创建流读取器
+                    using (StreamReader sr = new StreamReader(st))
+                    {
+                        ///读取返回的数据
+                        string content = sr.ReadToEnd();
 
                         url.Content = content;
-						url.ArrayData = Encoding.GetEncoding(response.CharacterSet.ToLower()).GetBytes(content);
-					}
-				}
-			}
-			catch (Exception ex)
-			{
-				isReadCompleted = false;
-			}
-			finally
-			{
-				if (response != null)
-				{
-					response.Close();
-				}
-			}
+                        url.ArrayData = Encoding.GetEncoding(response.CharacterSet.ToLower()).GetBytes(content);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                isReadCompleted = false;
+            }
+            finally
+            {
+                if (response != null)
+                {
+                    response.Close();
+                }
+            }
 
-			return isReadCompleted;
-		}
-
-        public bool ReadStream(PageUrl url)
-        {
-            return ReadStream(url, null);
+            return isReadCompleted;
         }
 
 		/// <summary>

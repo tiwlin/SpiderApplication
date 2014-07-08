@@ -5,12 +5,12 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{919DCA35-68CD-41DD-8C4A-C843DEC08B2D}</ProjectGuid>
+    <ProjectGuid>{4CBAC462-C155-4430-9325-2F894303D518}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SpiderLib</RootNamespace>
-    <AssemblyName>SpiderLib</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <RootNamespace>DBUtility</RootNamespace>
+    <AssemblyName>DBUtility</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -31,57 +31,29 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Common">
-      <HintPath>..\Dll\Common.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=3.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+    <Reference Include="log4net, Version=1.2.10.0, Culture=neutral, PublicKeyToken=692fbea5521e1304, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Dll\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\Dll\log4net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Data.OracleClient" />
     <Reference Include="System.Web" />
-    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CollectService.cs" />
-    <Compile Include="MeituanSourceModel.cs" />
-    <Compile Include="Meituan\PostParams.cs" />
-    <Compile Include="Meituan\MTShopModel.cs" />
-    <Compile Include="QunarSourceModel.cs" />
-    <Compile Include="SourceModelBase.cs" />
-    <Compile Include="SpiderThread.cs" />
-    <Compile Include="TaobaoSourceModel.cs" />
-    <Compile Include="ThreadManager.cs" />
+    <Compile Include="CommandInfo.cs" />
+    <Compile Include="DBHelper.cs" />
+    <Compile Include="DBHelperSQL.cs" />
+    <Compile Include="DESEncrypt.cs" />
+    <Compile Include="OracleHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TuangouBasicDataModel.cs" />
-    <Compile Include="TuangouDataDetailModel.cs" />
-    <Compile Include="TuangouUrlModel.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\BLL\BLL.csproj">
-      <Project>{F9186403-CAE7-49EF-8950-3FE647BB39A4}</Project>
-      <Name>BLL</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\CommonHelper\CommonHelper.csproj">
-      <Project>{5599E1D0-F1ED-48C1-91E7-A94963D1DFDF}</Project>
-      <Name>CommonHelper</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Model\Model.csproj">
-      <Project>{45948328-670C-4231-B581-D0923D3D8AFD}</Project>
-      <Name>Model</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PageLoader\PageLoader.csproj">
-      <Project>{16AA162C-30BD-473D-A68D-47EDF343C05F}</Project>
-      <Name>PageLoader</Name>
-    </ProjectReference>
+    <Compile Include="PubConstant.cs" />
+    <Compile Include="SQLHelper.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -88,6 +88,15 @@ namespace CommonHelper
 					}
 				}
 
+                if (dctExtendHeads != null && dctExtendHeads.Count > 0)
+                {
+                    foreach (KeyValuePair<string, string> item in dctExtendHeads)
+                    {
+                        request.Headers.Add(item.Key, item.Value);
+                        //request.Headers[item.Key] = item.Value;
+                    }
+                }
+
 				if ((content ?? string.Empty).Length > 0)
 				{
 					request.Method = "POST";
@@ -100,14 +109,6 @@ namespace CommonHelper
 					stream.Write(bytes, 0, bytes.Length);
 					stream.Close();
 				}
-
-                if (dctExtendHeads != null && dctExtendHeads.Count > 0)
-                {
-                    foreach (KeyValuePair<string, string> item in dctExtendHeads)
-                    {
-                        request.Headers.Add(item.Key, item.Value);
-                    }
-                }
 
 				response = request.GetResponse() as HttpWebResponse;
 

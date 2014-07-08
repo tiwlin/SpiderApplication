@@ -23,6 +23,11 @@ namespace PageLoader
         /// <returns>匹配正则表达式的内容</returns>
         public IList<T> ParseContent<T>(PageUrl pageUrl, string pattern, Func<MatchCollection, IList<T>> func)
         {
+            if (string.IsNullOrEmpty(pageUrl.Content))
+            {
+                return null;
+            }
+
             Regex regex = new Regex(pattern);
             MatchCollection matchCollection = regex.Matches(pageUrl.Content);
 
@@ -39,6 +44,11 @@ namespace PageLoader
         /// <returns>匹配正则表达式的内容</returns>
         public T ParseContent<T>(PageUrl pageUrl, string pattern, Func<MatchCollection, T> func)
         {
+            if (string.IsNullOrEmpty(pageUrl.Content))
+            {
+                return default(T);
+            }
+
             Regex regex = new Regex(pattern);
             MatchCollection matchCollection = regex.Matches(pageUrl.Content);
 

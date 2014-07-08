@@ -6,6 +6,8 @@ using PageLoader;
 using System.Text.RegularExpressions;
 using System.Net;
 using SpiderLib.Meituan;
+using Newtonsoft.Json;
+using BLL;
 
 namespace SpiderLib
 {
@@ -20,6 +22,8 @@ namespace SpiderLib
         private static readonly string _domainFormat = "http://{0}.meituan.com";
 
         private static readonly string _deallistLinkFormat = "http://{0}.meituan.com/index/deallist";
+
+        private static readonly string _poilistLinkFromat = "http://www.meituan.com/deal/poilist/{0}";
 
         /// <summary>
         /// 所有筛选条件的正则表达式
@@ -49,15 +53,13 @@ namespace SpiderLib
         /// <summary>
         /// 懒加载数据（通过模拟加载数据）正则表达式
         /// </summary>
-        private static string _regexAsynLoadParams = @"(?is)(['""]?)data\1:{\1params\1:(?<mteventParams>{\1mteventParams\1:{[^}]+}}),\s*\1geotype\1:(?<geotype>\d+),\s*\1areaid\1:(?<areaid>\1*\w+\1*).*\1asyncPageviewData\1:{\1deals\1:\1(?<dealids>[\d,]+)\1";
+        private static string _regexAsynLoadParams = @"(?is)(['""]?)data\1:{\1params\1:(?<mteventParams>{\1mteventParams\1:{[^}]+}}),\s*\1geotype\1:(?<geotype>\d+),\s*\1areaid\1:(?<areaid>\1*\w+\1*).*\1asyncPageviewData\1:{\1acms\1:\[(?<acms>[\w"",]+)\],\s*\1deals\1:\1(?<dealids>[\d,]+)\1";
 
         /// <summary>
         /// 返回的列表的产品数据的正则表达式
         /// </summary>
-        private static string _regexProduct = "(?is)<div class=\\\\\"deal-tile.*?class=\\\\\"xtitle\\\\\">(?<xtitle>[\\s\\\\/\\w+]+).*?<\\\\/div><\\\\/div>";
-
-
-        private WebProxy proxy = new WebProxy("172.16.1.2:8080", false) { Credentials = new NetworkCredential("frankielin@schmidtelectronics.com", "tiwlintiw520") };
+        private static string _regexDeal = "(?is)<div class=\\\\\"deal-tile.*?<a href=\\\\\"(?<url>[^'\"\\s>]+deal\\\\/(?<dealid>\\d+).html?[^'\"\\s>]+)\\\\\".*?class=\\\\\"xtitle\\\\\">(?<xtitle>[\\s\\\\/\\w+]+).*?<\\\\/div><\\\\/div>";
+        //private static string _regexProduct = "(?is)<div class=\\\\\"deal-tile.*?class=\\\\\"xtitle\\\\\">(?<xtitle>[\\s\\\\/\\w+]+).*?<\\\\/div><\\\\/div>";
 
         public string[] Categories
         {
@@ -116,6 +118,22 @@ namespace SpiderLib
             }
         }
 
+        private Dictionary<string, List<TuangouUrlModel>> _dctDealUrls;
+        /// <summary>
+        /// 交易的产品地址
+        /// </summary>
+        public Dictionary<string, List<TuangouUrlModel>> DctDealUrls
+        {
+            get
+            {
+                return _dctDealUrls;
+            }
+            set
+            {
+                _dctDealUrls = value;
+            }
+        }
+
         private IList<TuangouBasicDataModel> _basicDatas;
         /// <summary>
         /// 基础信息
@@ -132,25 +150,56 @@ namespace SpiderLib
             }
         }
 
+        private List<string> ShopIds = new List<string>();
+
         public override void Spider()
         {
+            Init();
+
             Loader loader = new Loader();
             Parser parser = new Parser();
 
             IDictionary<string, string> dctXRequestWith = new Dictionary<string, string>();
             dctXRequestWith.Add("X-Requested-With", "XMLHttpRequest");
 
+            _dctDealUrls = new Dictionary<string, List<TuangouUrlModel>>();
             foreach (string key in _dctUrls.Keys)
             {
+                List<TuangouUrlModel> lstDeal = new List<TuangouUrlModel>();
+
                 foreach (TuangouUrlModel urlModel in _dctUrls[key])
                 {
-                    loader.ReadStream(urlModel.Url, proxy);
+                    loader.ReadStream(urlModel.Url, _proxy);
                     PostParams postParams = parser.ParseContent(urlModel.Url, _regexAsynLoadParams, GetPostParams);
 
-                    string pageContent = CommonHelper.HttpHelper.GetResponse(string.Format(_deallistLinkFormat, key), postParams.ToString(), string.Empty, string.Empty, null, null, proxy, dctXRequestWith);
+                    //如果为空，则直接读取页面的数据
+                    if (postParams == null)
+                    {
+                        
+                    }
+                    else
+                    {
+                        string pageContent = CommonHelper.HttpHelper.GetResponse(string.Format(_deallistLinkFormat, key), postParams.ToString(), string.Empty, string.Empty, null, null, _proxy, dctXRequestWith);
 
-                    IList<TuangouUrlModel> lstProduct = parser.ParseContent(pageContent, _regexProduct, GetProductUrl);
+                        // 交易的产品信息
+                        IList<TuangouUrlModel> deals = parser.ParseContent(pageContent, _regexDeal, GetDealUrl);
+
+                        if (deals != null && deals.Count > 0)
+                        {
+                            ((List<TuangouUrlModel>)deals).ForEach(b => { b.Category = urlModel.Category; b.Region = urlModel.Region; });
+                            lstDeal.AddRange(deals);
+                        }
+
+                        // 获取商家的信息
+                        foreach(TuangouUrlModel item in deals)
+                        {
+                            GetShopInformation(item);
+                        }
+
+                    }
                 }
+
+                _dctDealUrls.Add(key, new List<TuangouUrlModel>());
             }
 
             base.Spider();
@@ -178,7 +227,7 @@ namespace SpiderLib
                 TuangouBasicDataModel basicData = new TuangouBasicDataModel() { City = item.Key };
 
                 url.Url = item.Value;
-                loader.ReadStream(url, proxy);
+                loader.ReadStream(url, _proxy);
 
                 // 加载分类大类
                 IList<TuangouUrlModel> lstCategoryUrls = parser.ParseContent(url, _regexCategoty, GetCategoryUrl);
@@ -187,10 +236,12 @@ namespace SpiderLib
                     basicData.DctCategories = new Dictionary<string, IList<string>>();
                     foreach (TuangouUrlModel category in lstCategoryUrls)
                     {
-                        loader.ReadStream(category.Url, proxy);
-                        IList<string> lstUrls = parser.ParseContent(category.Url, _regexSubCategory, GetMatchResult);
+                        if (loader.ReadStream(category.Url, _proxy))
+                        {
+                            IList<string> lstUrls = parser.ParseContent(category.Url, _regexSubCategory, GetMatchResult);
 
-                        basicData.DctCategories.Add(category.Category, lstUrls);
+                            basicData.DctCategories.Add(category.Category, lstUrls);
+                        }
                     }
                 }
 
@@ -201,10 +252,12 @@ namespace SpiderLib
                     basicData.DctRegions = new Dictionary<string, IList<string>>();
                     foreach (TuangouUrlModel region in lstRegionUrls)
                     {
-                        loader.ReadStream(region.Url, proxy);
-                        IList<string> lstUrls = parser.ParseContent(region.Url, _regexBusinessArea, GetMatchResult);
+                        if (loader.ReadStream(region.Url, _proxy))
+                        {
+                            IList<string> lstUrls = parser.ParseContent(region.Url, _regexBusinessArea, GetMatchResult);
 
-                        basicData.DctRegions.Add(region.Region, lstUrls);
+                            basicData.DctRegions.Add(region.Region, lstUrls);
+                        }
                     }
                 }
 
@@ -249,6 +302,31 @@ namespace SpiderLib
                     }
                 }
                 _dctUrls.Add(item.City, urls);
+            }
+        }
+
+        private void GetShopInformation(TuangouUrlModel model)
+        {
+            IDictionary<string, string> dctXRequestWith = new Dictionary<string, string>();
+            dctXRequestWith.Add("X-Requested-With", "XMLHttpRequest");
+
+            string pageContent = CommonHelper.HttpHelper.GetResponse(string.Format(_poilistLinkFromat,model.Url.Name), string.Empty, string.Empty, string.Empty, null, null, _proxy, dctXRequestWith);
+            Dictionary<string, IList<Meituan.MTShopModel>> dctShopModel = JsonConvert.DeserializeObject<Dictionary<string, IList<Meituan.MTShopModel>>>(pageContent);
+
+            if (dctShopModel != null && dctShopModel.Count > 0)
+            {
+                ShopBLL bll = new ShopBLL();
+
+                foreach (var key in dctShopModel.Keys)
+                {
+                    foreach (MTShopModel item in dctShopModel[key])
+                    {
+                        item.city = item.city == 0 ? Int32.Parse(key) : item.city;
+                        item.category = model.Category;
+                        item.region = model.Region;
+                        bll.Insert(item);
+                    }
+                }
             }
         }
 
@@ -361,6 +439,7 @@ namespace SpiderLib
                     geotype = matchCollection[0].Groups["geotype"].Value,
                     areaid = matchCollection[0].Groups["areaid"].Value,
                     dealids = matchCollection[0].Groups["dealids"].Value,
+                    acms = matchCollection[0].Groups["acms"].Value,
                     offset = "0"
                 };
             }
@@ -368,7 +447,7 @@ namespace SpiderLib
             return postParams;
         }
 
-        private IList<TuangouUrlModel> GetProductUrl(MatchCollection matchCollection)
+        private IList<TuangouUrlModel> GetDealUrl(MatchCollection matchCollection)
         {
             IList<TuangouUrlModel> lstResult = new List<TuangouUrlModel>();
 
@@ -378,27 +457,14 @@ namespace SpiderLib
 
                 TuangouUrlModel url = new TuangouUrlModel()
                 {
-                    Text = text
+                    Text = text,
+                    Url = new PageUrl()
+                    {
+                        Url = item.Groups["url"].Value.Replace("\\",""),
+                        Name = item.Groups["dealid"].Value
+                    }
                 };
-
-                //if (_regions.Contains(region))
-                //{
-                //    TuangouUrlModel url = new TuangouUrlModel()
-                //    {
-                //        Region = item.Groups["key"].Value,
-                //        Text = region,
-                //        Count = Convert.ToInt32(item.Groups["count"].Value),
-                //        Url = new PageUrl()
-                //        {
-                //            Url = item.Groups["url"].Value,
-                //            Name = region
-                //        }
-
-                //    };
-
-                //    lstResult.Add(url);
-                //}
-
+                lstResult.Add(url);
             }
 
             return lstResult;

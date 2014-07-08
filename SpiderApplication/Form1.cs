@@ -29,14 +29,20 @@ namespace SpiderApplication
             //    dicAirline = client.GetListDic(tbSystemCode.Text);
             //}
             string[] str = { "CANPEK01", "CANSHA01", "SHAPEK01", "CANPEK02", "CANSHA02", "SHAPEK02", "SZXPEK01", "SZXSHA01", "SZXPEK01" };
-            dicAirline.Add("taobao", str);
-            dicAirline.Add("qunar", str);
+            //dicAirline.Add("taobao", str);
+            //dicAirline.Add("qunar", str);
             //dicAirline.Add("elong", str);
-            ThreadManager.UrlList.Add(new TaobaoSourceModel(wbTaobao) { MaxAccessCount = 5, Name = "taobao", UrlDic = new Dictionary<string, string>() });
-            ThreadManager.UrlList.Add(new QunarSourceModel(wbQunar) { MaxAccessCount = 5, Name = "qunar", UrlDic = new Dictionary<string, string>() });
+            //ThreadManager.UrlList.Add(new TaobaoSourceModel(wbTaobao) { MaxAccessCount = 100, Name = "taobao", UrlDic = new Dictionary<string, string>() });
+            //ThreadManager.UrlList.Add(new QunarSourceModel(wbQunar) { MaxAccessCount = 5, Name = "qunar", UrlDic = new Dictionary<string, string>() });
+
+            MeituanSourceModel meituanModel = new MeituanSourceModel() { Name = "meituan", UrlDic = new Dictionary<string, string>() };
+            meituanModel.UrlDic.Add("gz", "http://gz.meituan.com/category");
+            //meituanModel.Proxy = null;
+            ThreadManager.UrlList.Add(meituanModel);
+
 
             int count = dicAirline.Count;
-            new ThreadManager(count, 10);
+            new ThreadManager(count + 1, 10);
             foreach (string key in dicAirline.Keys)
             {
                 Dictionary<string, string> urlDic = new Dictionary<string, string>();

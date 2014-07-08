@@ -1,6 +1,7 @@
 ﻿using SpiderLib;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Net;
 
 namespace UnitTest
 {
@@ -74,8 +75,9 @@ namespace UnitTest
             MeituanSourceModel_Accessor target = new MeituanSourceModel_Accessor(); // TODO: Initialize to an appropriate value
             target.UrlDic = new System.Collections.Generic.Dictionary<string, string>();
             target.UrlDic.Add("gz", "http://gz.meituan.com/category");
-
-            target.Init();
+            WebProxy proxy = new WebProxy(new Uri("http://62.113.208.89:7808"));
+            target.Proxy = proxy;
+            //target.Init();
             target.Spider();
             //Assert.Inconclusive("A method that does not return a value cannot be verified.");
         }
@@ -99,7 +101,7 @@ namespace UnitTest
         {
             string str = "\u30103\u5e97\u901a\u7528\u3011\u4e0a\u97e9\u9986\u97e9\u5f0f\u81ea\u52a93D\u4e3b\u9898\u9910\u5385";
 
-            string result = UniconToString(str);
+            //string result = UniconToString(str);
         }
 
         public string UniconToString(string str)
@@ -122,6 +124,14 @@ namespace UnitTest
                 }
             }
             return outStr;
+        }
+
+        [TestMethod]
+        public void InitProxyUri()
+        {
+            MeituanSourceModel_Accessor target = new MeituanSourceModel_Accessor();
+            target.Proxy = null;
+            target.InitProxyUris();
         }
     }
 }
