@@ -6,7 +6,7 @@
     <ProductVersion>
     </ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{3E3CB1FC-A9DC-4032-B2A7-052631F39EDA}</ProjectGuid>
+    <ProjectGuid>{A05255FE-4B76-4C8C-B043-963254080181}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>UnitTest</RootNamespace>
@@ -38,6 +38,9 @@
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\Dll\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -61,9 +64,18 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Shadow Include="Test References\SpiderLib.accessor" />
-  </ItemGroup>
-  <ItemGroup>
+    <ProjectReference Include="..\BLL\BLL.csproj">
+      <Project>{F9186403-CAE7-49EF-8950-3FE647BB39A4}</Project>
+      <Name>BLL</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CommonHelper\CommonHelper.csproj">
+      <Project>{5599E1D0-F1ED-48C1-91E7-A94963D1DFDF}</Project>
+      <Name>CommonHelper</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Model\Model.csproj">
+      <Project>{45948328-670C-4231-B581-D0923D3D8AFD}</Project>
+      <Name>Model</Name>
+    </ProjectReference>
     <ProjectReference Include="..\PageLoader\PageLoader.csproj">
       <Project>{16AA162C-30BD-473D-A68D-47EDF343C05F}</Project>
       <Name>PageLoader</Name>
@@ -72,9 +84,6 @@
       <Project>{919DCA35-68CD-41DD-8C4A-C843DEC08B2D}</Project>
       <Name>SpiderLib</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
