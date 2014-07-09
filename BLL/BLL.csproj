@@ -39,6 +39,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CategoryBLL.cs" />
+    <Compile Include="InitUrlsBLL.cs" />
+    <Compile Include="RegionBLL.cs" />
     <Compile Include="ShopBLL.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

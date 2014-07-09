@@ -8,12 +8,13 @@ using System.Net;
 using SpiderLib.Meituan;
 using Newtonsoft.Json;
 using BLL;
+using Model;
 
 namespace SpiderLib
 {
     public class MeituanSourceModel : SourceModelBase
     {
-        private string[] _categories = { "美食", "电影", "休闲娱乐", "丽人", "生活服务", "酒店", "旅游", "购物", "抽奖" };
+        private string[] _categories = { "自助餐", "美食", "电影", "休闲娱乐", "丽人", "生活服务", "酒店", "旅游", "购物", "抽奖" };
 
         private string[] _regions = { "越秀区", "天河区", "番禺区", "海珠区", "白云区", "荔湾区", "黄埔区", "萝岗区", "增城市", "花都区", "从化市", "南沙区" };
 
@@ -156,55 +157,72 @@ namespace SpiderLib
         {
             Init();
 
+            foreach (string key in _dctUrls.Keys)
+            {
+                foreach (TuangouUrlModel urlModel in _dctUrls[key])
+                {
+                    AnalyzeShopInformation(key, urlModel);
+                }
+            }
+
+            base.Spider();
+        }
+        
+        private void AnalyzeShopInformation(string city, TuangouUrlModel indexUrlModel)
+        {
+            bool isFinish = false;
+
+            List<TuangouUrlModel> lstDeal = new List<TuangouUrlModel>();
+
             Loader loader = new Loader();
             Parser parser = new Parser();
 
             IDictionary<string, string> dctXRequestWith = new Dictionary<string, string>();
             dctXRequestWith.Add("X-Requested-With", "XMLHttpRequest");
 
-            _dctDealUrls = new Dictionary<string, List<TuangouUrlModel>>();
-            foreach (string key in _dctUrls.Keys)
+            int index = 0;
+            while (!isFinish)
             {
-                List<TuangouUrlModel> lstDeal = new List<TuangouUrlModel>();
+                index++;
+                TuangouUrlModel urlModel = new TuangouUrlModel() 
+                { 
+                    Region = indexUrlModel.Region, 
+                    Category = indexUrlModel.Category,
+                    Url = new PageUrl(string.Format(indexUrlModel.Url.Url + "/page{0}", index))
+                };
 
-                foreach (TuangouUrlModel urlModel in _dctUrls[key])
+                loader.ReadStream(urlModel.Url, _proxy);
+                PostParams postParams = parser.ParseContent(urlModel.Url, _regexAsynLoadParams, GetPostParams);
+
+                //如果为空，则直接读取页面的数据
+                if (postParams == null)
                 {
-                    loader.ReadStream(urlModel.Url, _proxy);
-                    PostParams postParams = parser.ParseContent(urlModel.Url, _regexAsynLoadParams, GetPostParams);
-
-                    //如果为空，则直接读取页面的数据
-                    if (postParams == null)
-                    {
-                        
-                    }
-                    else
-                    {
-                        string pageContent = CommonHelper.HttpHelper.GetResponse(string.Format(_deallistLinkFormat, key), postParams.ToString(), string.Empty, string.Empty, null, null, _proxy, dctXRequestWith);
-
-                        // 交易的产品信息
-                        IList<TuangouUrlModel> deals = parser.ParseContent(pageContent, _regexDeal, GetDealUrl);
-
-                        if (deals != null && deals.Count > 0)
-                        {
-                            ((List<TuangouUrlModel>)deals).ForEach(b => { b.Category = urlModel.Category; b.Region = urlModel.Region; });
-                            lstDeal.AddRange(deals);
-                        }
-
-                        // 获取商家的信息
-                        foreach(TuangouUrlModel item in deals)
-                        {
-                            GetShopInformation(item);
-                        }
-
-                    }
+                    isFinish = true;
                 }
+                else
+                {
+                    string pageContent = CommonHelper.HttpHelper.GetResponse(string.Format(_deallistLinkFormat, city), postParams.ToString(), string.Empty, string.Empty, null, null, _proxy, dctXRequestWith);
 
-                _dctDealUrls.Add(key, new List<TuangouUrlModel>());
+                    // 交易的产品信息
+                    IList<TuangouUrlModel> deals = parser.ParseContent(pageContent, _regexDeal, GetDealUrl);
+
+                    if (deals != null && deals.Count > 0)
+                    {
+                        ((List<TuangouUrlModel>)deals).ForEach(b => { b.Category = urlModel.Category; b.Region = urlModel.Region; });
+                        lstDeal.AddRange(deals);
+                    }
+
+                    // 获取商家的信息
+                    foreach (TuangouUrlModel item in deals)
+                    {
+                        InsertShopInformation(item);
+                    }
+
+                }
             }
 
-            base.Spider();
+            _dctDealUrls.Add(city, lstDeal);
         }
-
         /// <summary>
         /// 初始化所有基础数据
         /// </summary>
@@ -230,33 +248,53 @@ namespace SpiderLib
                 loader.ReadStream(url, _proxy);
 
                 // 加载分类大类
-                IList<TuangouUrlModel> lstCategoryUrls = parser.ParseContent(url, _regexCategoty, GetCategoryUrl);
+                IList<TuangouUrlModel> lstCategoryUrls = parser.ParseContent(url, _regexCategoty, true, GetCategoryUrl);
                 if (lstCategoryUrls != null && lstCategoryUrls.Count > 0)
                 {
                     basicData.DctCategories = new Dictionary<string, IList<string>>();
+                    CategoryBLL categoryBll = new CategoryBLL();
                     foreach (TuangouUrlModel category in lstCategoryUrls)
                     {
+                        categoryBll.Insert(new CategoryModel() { Name = category.Text, Code = category.Category });
+
                         if (loader.ReadStream(category.Url, _proxy))
                         {
-                            IList<string> lstUrls = parser.ParseContent(category.Url, _regexSubCategory, GetMatchResult);
+                            IList<TuangouUrlModel> lstUrls = parser.ParseContent(category.Url, _regexSubCategory, false, GetCategoryUrl);
 
-                            basicData.DctCategories.Add(category.Category, lstUrls);
+                            // 数据入库
+                            foreach (TuangouUrlModel urlModel in lstUrls)
+                            {
+                                CategoryModel model = new CategoryModel() { Name = urlModel.Text, Code = urlModel.Category, ParentCategory = category.Category };
+                                categoryBll.Insert(model);
+                            }
+
+                            basicData.DctCategories.Add(category.Category, lstUrls.Select(b => b.Category).ToList());
                         }
                     }
                 }
 
                 // 加载区域
-                IList<TuangouUrlModel> lstRegionUrls = parser.ParseContent(url, _regexRegion, GetRegionUrl);
+                IList<TuangouUrlModel> lstRegionUrls = parser.ParseContent(url, _regexRegion, true, GetRegionUrl);
                 if (lstRegionUrls != null && lstRegionUrls.Count > 0)
                 {
                     basicData.DctRegions = new Dictionary<string, IList<string>>();
+                    RegionBLL regionBll = new RegionBLL();
                     foreach (TuangouUrlModel region in lstRegionUrls)
                     {
+                        regionBll.Insert(new RegionModel() { Name = region.Text, Code = region.Region });
+
                         if (loader.ReadStream(region.Url, _proxy))
                         {
-                            IList<string> lstUrls = parser.ParseContent(region.Url, _regexBusinessArea, GetMatchResult);
+                            IList<TuangouUrlModel> lstUrls = parser.ParseContent(region.Url, _regexBusinessArea, false, GetRegionUrl);
 
-                            basicData.DctRegions.Add(region.Region, lstUrls);
+                            // 数据入库
+                            foreach (TuangouUrlModel urlModel in lstUrls)
+                            {
+                                RegionModel model = new RegionModel() { Name = urlModel.Text, Code = urlModel.Region, ParentRegion = region.Region };
+                                regionBll.Insert(model);
+                            }
+
+                            basicData.DctRegions.Add(region.Region, lstUrls.Select(b => b.Region).ToList());
                         }
                     }
                 }
@@ -268,6 +306,57 @@ namespace SpiderLib
         }
 
         /// <summary>
+        /// 初始化部门商圈需要采集的Url
+        /// </summary>
+        private void InitPartUrls()
+        {
+            //http://gz.meituan.com/category/xican/tianhequ
+            string urlTemplate = "http://gz.meituan.com/category/{0}/{1}";
+            _urls = new List<TuangouUrlModel>();
+            _dctUrls = new Dictionary<string, IList<TuangouUrlModel>>();
+            InitUrlsBLL bll = new InitUrlsBLL();
+
+            foreach (TuangouBasicDataModel item in _basicDatas)
+            {
+                if (item != null && item.DctCategories != null && item.DctRegions != null)
+                {
+                    IList<TuangouUrlModel> urls = new List<TuangouUrlModel>();
+                    foreach (string categoryKey in item.DctCategories.Keys)
+                    {
+                        foreach (string category in item.DctCategories[categoryKey])
+                        {
+                            foreach (string regionKey in item.DctRegions.Keys)
+                            {
+                                foreach (string region in item.DctRegions[regionKey])
+                                {
+                                    TuangouUrlModel urlModel = new TuangouUrlModel()
+                                    {
+                                        Category = categoryKey,
+                                        Region = regionKey,
+                                        Url = new PageUrl() { Url = string.Format(urlTemplate, category, region) }
+                                    };
+
+                                    InitUrlsModel model = new InitUrlsModel()
+                                    {
+                                        CategoryCode = urlModel.Category,
+                                        RegionCode = urlModel.Region,
+                                        Url = urlModel.Url.Url
+                                    };
+
+                                    bll.Insert(model);
+
+                                    urls.Add(urlModel);
+                                    _urls.Add(urlModel);
+                                }
+                            }
+                        }
+                    }
+                    _dctUrls.Add(item.City, urls);
+                }
+            }
+        }
+
+        /// <summary>
         /// 初始化所有需要采集的Url
         /// </summary>
         private void InitUrls()
@@ -276,41 +365,53 @@ namespace SpiderLib
             string urlTemplate = "http://gz.meituan.com/category/{0}/{1}";
             _urls = new List<TuangouUrlModel>();
             _dctUrls = new Dictionary<string, IList<TuangouUrlModel>>();
+            InitUrlsBLL bll = new InitUrlsBLL();
 
             foreach (TuangouBasicDataModel item in _basicDatas)
             {
-                IList<TuangouUrlModel> urls = new List<TuangouUrlModel>();
-                foreach (string categoryKey in item.DctCategories.Keys)
+                if (item != null && item.DctCategories != null && item.DctRegions != null)
                 {
-                    foreach (string category in item.DctCategories[categoryKey])
+                    IList<TuangouUrlModel> urls = new List<TuangouUrlModel>();
+                    foreach (string categoryKey in item.DctCategories.Keys)
                     {
                         foreach (string regionKey in item.DctRegions.Keys)
                         {
-                            foreach (string region in item.DctRegions[regionKey])
+                            TuangouUrlModel urlModel = new TuangouUrlModel()
                             {
-                                TuangouUrlModel urlModel = new TuangouUrlModel()
-                                {
-                                    Category = categoryKey,
-                                    Region = regionKey,
-                                    Url = new PageUrl() { Url = string.Format(urlTemplate, category, region) }
-                                };
+                                Category = categoryKey,
+                                Region = regionKey,
+                                Url = new PageUrl() { Url = string.Format(urlTemplate, categoryKey, regionKey) }
+                            };
 
-                                urls.Add(urlModel);
-                                _urls.Add(urlModel);
-                            }
+                            InitUrlsModel model = new InitUrlsModel()
+                            {
+                                CategoryCode = urlModel.Category,
+                                RegionCode = urlModel.Region,
+                                Url = urlModel.Url.Url
+                            };
+
+                            bll.Insert(model);
+
+                            urls.Add(urlModel);
+                            _urls.Add(urlModel);
                         }
+
                     }
+                    _dctUrls.Add(item.City, urls);
                 }
-                _dctUrls.Add(item.City, urls);
             }
         }
 
-        private void GetShopInformation(TuangouUrlModel model)
+        /// <summary>
+        /// 存储店铺的信息
+        /// </summary>
+        /// <param name="model"></param>
+        private void InsertShopInformation(TuangouUrlModel model)
         {
             IDictionary<string, string> dctXRequestWith = new Dictionary<string, string>();
             dctXRequestWith.Add("X-Requested-With", "XMLHttpRequest");
 
-            string pageContent = CommonHelper.HttpHelper.GetResponse(string.Format(_poilistLinkFromat,model.Url.Name), string.Empty, string.Empty, string.Empty, null, null, _proxy, dctXRequestWith);
+            string pageContent = CommonHelper.HttpHelper.GetResponse(string.Format(_poilistLinkFromat, model.Url.Name), string.Empty, string.Empty, string.Empty, null, null, _proxy, dctXRequestWith);
             Dictionary<string, IList<Meituan.MTShopModel>> dctShopModel = JsonConvert.DeserializeObject<Dictionary<string, IList<Meituan.MTShopModel>>>(pageContent);
 
             if (dctShopModel != null && dctShopModel.Count > 0)
@@ -335,15 +436,15 @@ namespace SpiderLib
         /// </summary>
         /// <param name="matchCollection"></param>
         /// <returns></returns>
-        private IList<string> GetMatchResult(MatchCollection matchCollection)
+        private IList<string> GetMatchResult(MatchCollection matchCollection, string key)
         {
             IList<string> lstResult = new List<string>();
 
             foreach (Match item in matchCollection)
             {
-                string key = item.Groups["key"].Value;
+                string val = item.Groups[key].Value;
 
-                lstResult.Add(key);
+                lstResult.Add(val);
             }
 
             return lstResult;
@@ -354,7 +455,7 @@ namespace SpiderLib
         /// </summary>
         /// <param name="matchCollection"></param>
         /// <returns></returns>
-        private IList<TuangouUrlModel> GetCategoryUrl(MatchCollection matchCollection)
+        private IList<TuangouUrlModel> GetCategoryUrl(MatchCollection matchCollection, bool isFilter)
         {
             IList<TuangouUrlModel> lstResult = new List<TuangouUrlModel>();
 
@@ -362,13 +463,13 @@ namespace SpiderLib
             {
                 string category = item.Groups["text"].Value;
 
-                if (_categories.Contains(category))
+                if (!isFilter || _categories.Contains(category))
                 {
                     TuangouUrlModel url = new TuangouUrlModel()
                     {
                         Category = item.Groups["key"].Value,
                         Text = category,
-                        Count = Convert.ToInt32(item.Groups["count"].Value),
+                        //Count = Convert.ToInt32(item.Groups["count"].Value),
                         Url = new PageUrl()
                         {
                             Url = item.Groups["url"].Value,
@@ -391,7 +492,7 @@ namespace SpiderLib
         /// <param name="matchCollection"></param>
         /// <param name="category"></param>
         /// <returns></returns>
-        private IList<TuangouUrlModel> GetRegionUrl(MatchCollection matchCollection)
+        private IList<TuangouUrlModel> GetRegionUrl(MatchCollection matchCollection, bool isFilter)
         {
             IList<TuangouUrlModel> lstResult = new List<TuangouUrlModel>();
 
@@ -399,13 +500,13 @@ namespace SpiderLib
             {
                 string region = item.Groups["text"].Value;
 
-                if (_regions.Contains(region))
+                if (!isFilter || _regions.Contains(region))
                 {
                     TuangouUrlModel url = new TuangouUrlModel()
                     {
                         Region = item.Groups["key"].Value,
                         Text = region,
-                        Count = Convert.ToInt32(item.Groups["count"].Value),
+                        //Count = Convert.ToInt32(item.Groups["count"].Value),
                         Url = new PageUrl()
                         {
                             Url = item.Groups["url"].Value,
@@ -460,7 +561,7 @@ namespace SpiderLib
                     Text = text,
                     Url = new PageUrl()
                     {
-                        Url = item.Groups["url"].Value.Replace("\\",""),
+                        Url = item.Groups["url"].Value.Replace("\\", ""),
                         Name = item.Groups["dealid"].Value
                     }
                 };

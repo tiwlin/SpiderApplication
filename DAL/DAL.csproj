@@ -39,6 +39,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CategoryDAL.cs" />
+    <Compile Include="InitUrlsDAL.cs" />
+    <Compile Include="RegionDAL.cs" />
     <Compile Include="ShopDAL.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

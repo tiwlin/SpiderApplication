@@ -86,6 +86,7 @@ namespace PageLoader
 
             ///请求地址
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url.Url);
+            request.Timeout = 60000;
 
             if (!string.IsNullOrEmpty(contentType))
             {
@@ -97,9 +98,11 @@ namespace PageLoader
                 request.Proxy = proxy;
             }
 
+            //request.UserAgent = "Mozilla/5.0 (Windows; U; Windows NT 5.2; zh-CN; rv:1.9.2.13) Gecko/20101203 Firefox/3.6.13 QQDownload/1.7";
+
             ///发起请求
             HttpWebResponse response = null;
-
+           
             try
             {
                 response = (HttpWebResponse)request.GetResponse();

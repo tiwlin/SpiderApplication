@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using SpiderLib;
 using Common;
 using System.Threading;
+using System.Net;
 
 namespace SpiderApplication
 {
@@ -37,6 +38,8 @@ namespace SpiderApplication
 
             MeituanSourceModel meituanModel = new MeituanSourceModel() { Name = "meituan", UrlDic = new Dictionary<string, string>() };
             meituanModel.UrlDic.Add("gz", "http://gz.meituan.com/category");
+            //WebProxy proxy = new WebProxy(new Uri("http://58.67.143.165:63000"));
+            //meituanModel.Proxy = proxy;
             //meituanModel.Proxy = null;
             ThreadManager.UrlList.Add(meituanModel);
 
