@@ -91,8 +91,10 @@
     <Compile Include="ExtendMethod.cs" />
     <Compile Include="FilterHelper.cs" />
     <Compile Include="FtpClient.cs" />
+    <Compile Include="FullWebBrowserCookie.cs" />
     <Compile Include="HttpHelper.cs" />
     <Compile Include="IDCardAnalyer.cs" />
+    <Compile Include="INativeMethods.cs" />
     <Compile Include="JSONSerializer.cs" />
     <Compile Include="LogHelper.cs" />
     <Compile Include="ObjectDeepCopy.cs" />

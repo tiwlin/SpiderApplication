@@ -123,6 +123,105 @@ namespace CommonHelper
 			return response;
 		}
 
+        /// <summary>
+        /// 获取请求的cookie
+        /// </summary>
+        /// <param name="_url"></param>
+        /// <param name="content"></param>
+        /// <param name="cookie"></param>
+        /// <param name="referer"></param>
+        /// <param name="username"></param>
+        /// <param name="password"></param>
+        /// <param name="heads"></param>
+        /// <param name="proxy"></param>
+        /// <param name="dctExtendHeads"></param>
+        /// <returns></returns>
+        public static string HttpWebRequestGetCookies(string _url, string content, string cookie, string referer, string username, string password, IHttpHeaders heads, WebProxy proxy, IDictionary<string, string> dctExtendHeads)
+        {
+            HttpWebResponse response = null;
+            string cookieString = string.Empty;
+
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(_url);
+
+                if ((cookie ?? string.Empty).Length > 0)
+                {
+                    request.CookieContainer = new CookieContainer();
+                    request.CookieContainer.SetCookies(new Uri(_url), cookie);
+                }
+
+                if ((username ?? string.Empty).Length > 0)
+                {
+                    request.Credentials = new System.Net.NetworkCredential(username, password ?? string.Empty);
+                }
+
+                if ((referer ?? string.Empty).Length > 0)
+                {
+                    request.Referer = referer;
+                }
+
+                if (proxy != null)
+                {
+                    request.Proxy = proxy;
+                }
+
+                if (heads != null)
+                {
+                    if (heads.Accept != null)
+                    {
+                        request.Accept = heads.Accept;
+                    }
+                    if (heads.AcceptCharset != null)
+                    {
+                        request.Headers.Add(HttpRequestHeader.AcceptCharset, heads.AcceptCharset);
+                    }
+                    if (heads.AcceptLanguage != null)
+                    {
+                        request.Headers.Add(HttpRequestHeader.AcceptLanguage, heads.AcceptLanguage);
+                    }
+                    if (heads.UserAgent != null)
+                    {
+                        request.UserAgent = heads.UserAgent;
+                    }
+                }
+
+                if (dctExtendHeads != null && dctExtendHeads.Count > 0)
+                {
+                    foreach (KeyValuePair<string, string> item in dctExtendHeads)
+                    {
+                        request.Headers.Add(item.Key, item.Value);
+                        //request.Headers[item.Key] = item.Value;
+                    }
+                }
+
+                if ((content ?? string.Empty).Length > 0)
+                {
+                    request.Method = "POST";
+                    request.Timeout = 60000;
+                    request.ContentType = "application/x-www-form-urlencoded";
+                    byte[] bytes = Encoding.UTF8.GetBytes(content);
+                    request.ContentLength = bytes.Length;
+
+                    Stream stream = request.GetRequestStream();
+                    stream.Write(bytes, 0, bytes.Length);
+                    stream.Close();
+                }
+
+                response = request.GetResponse() as HttpWebResponse;
+
+                cookieString = request.CookieContainer.GetCookieHeader(new Uri(_url)).Replace(';',',');
+
+            }
+            catch (Exception ex)
+            {
+            }
+            finally
+            {
+            }
+
+            return cookieString;
+        }
 
 		public static HttpWebResponse HttpWebRequestPipelining(string _url, string content, string cookie, string referer, string username, string password, IHttpHeaders heads)
 		{

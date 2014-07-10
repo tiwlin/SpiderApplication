@@ -65,16 +65,25 @@ namespace PageLoader
 		/// <returns></returns>
 		public bool ReadStream(PageUrl url, WebProxy proxy)
 		{
-            return ReadStream(url, "application/x-www-form-urlencoded", proxy);
+            return ReadStream(url, "application/x-www-form-urlencoded", proxy, null).Success;
 		}
 
+        /// <summary>
+        /// 发起请求连接的，并获取数据
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        public bool ReadStream(PageUrl url, WebProxy proxy, CookieContainer cookies)
+        {
+            return ReadStream(url, "application/x-www-form-urlencoded", proxy, cookies).Success;
+        }
 
         public bool ReadStream(PageUrl url)
         {
             return ReadStream(url, null);
         }
 
-        public bool ReadStream(PageUrl url, string contentType, WebProxy proxy)
+        public ResultStatus ReadStream(PageUrl url, string contentType, WebProxy proxy, CookieContainer cookies)
         {
             int work = 0, io = 0;
             
@@ -82,7 +91,7 @@ namespace PageLoader
             //Console.WriteLine("工作线程总数：{0}，IO线程总数：{1}，当前ULR：{2}", work, io, url.Url);
             //Console.WriteLine("读的线程ID：{0}", Thread.CurrentThread.ManagedThreadId);
 
-            bool isReadCompleted = true;
+            ResultStatus stauts = new ResultStatus() { Success = true };
 
             ///请求地址
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url.Url);
@@ -96,6 +105,11 @@ namespace PageLoader
             if (proxy != null)
             {
                 request.Proxy = proxy;
+            }
+
+            if (cookies != null)
+            {
+               request.CookieContainer = cookies;
             }
 
             //request.UserAgent = "Mozilla/5.0 (Windows; U; Windows NT 5.2; zh-CN; rv:1.9.2.13) Gecko/20101203 Firefox/3.6.13 QQDownload/1.7";
@@ -122,7 +136,8 @@ namespace PageLoader
             }
             catch (Exception ex)
             {
-                isReadCompleted = false;
+                stauts.Success = false;
+                stauts.Message = ex.Message;
             }
             finally
             {
@@ -132,7 +147,7 @@ namespace PageLoader
                 }
             }
 
-            return isReadCompleted;
+            return stauts;
         }
 
 		/// <summary>

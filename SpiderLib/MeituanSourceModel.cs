@@ -9,11 +9,22 @@ using SpiderLib.Meituan;
 using Newtonsoft.Json;
 using BLL;
 using Model;
+using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 namespace SpiderLib
 {
     public class MeituanSourceModel : SourceModelBase
     {
+        [DllImport("wininet.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        public static extern bool InternetSetCookie(string lpszUrlName, string lbszCookieName, string lpszCookieData);
+
+        [DllImport("wininet.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        public static extern bool InternetGetCookie(string lpszUrlName, string lbszCookieName, StringBuilder lpszCookieData, ref int lpdwSize);
+
+        [DllImport("kernel32.dll")]
+        public static extern Int32 GetLastError();
+
         private string[] _categories = { "自助餐", "美食", "电影", "休闲娱乐", "丽人", "生活服务", "酒店", "旅游", "购物", "抽奖" };
 
         private string[] _regions = { "越秀区", "天河区", "番禺区", "海珠区", "白云区", "荔湾区", "黄埔区", "萝岗区", "增城市", "花都区", "从化市", "南沙区" };
@@ -25,6 +36,8 @@ namespace SpiderLib
         private static readonly string _deallistLinkFormat = "http://{0}.meituan.com/index/deallist";
 
         private static readonly string _poilistLinkFromat = "http://www.meituan.com/deal/poilist/{0}";
+
+        private static readonly string[] _arrCookieKey = new string[4] { "uuid", "SID", "ci", "abt" };
 
         /// <summary>
         /// 所有筛选条件的正则表达式
@@ -151,11 +164,52 @@ namespace SpiderLib
             }
         }
 
+        private CookieContainer _cookieContainer;
+        public CookieContainer CookieContainer
+        {
+            get
+            {
+                return _cookieContainer;
+            }
+            set
+            {
+                _cookieContainer = value;
+            }
+        }
+
+        //private string _cookieString = "uuid=0545b76a232bb03d916e.1401257199.2.0.1,ci=20;abt=1404870606.1405526400%7CBCE;rvct=20%2C10,__mta=219569062.1403575087122.1404908982309.1404921856363.235,__utma=211559370.2068030844.1403575087.1404905929.1404921856.32,__utmz=211559370.1403575087.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none),__utmv=211559370.|1=city=gz=1^2=usertype=3=1^3=dealtype=319=1^5=cate=meishi=1,rvd=25413813%2C25408685%2C8173880%2C25274919%2C11598389,rus=1,lun=13570244952;lsu=13570244952;ufbanner=4;ttgr=288958;SID=6o7808unkmlfutqgntrfi5p4n5,__utmb=211559370.2.9.1404921862236,__utmc=211559370";
+        private string _cookieString = "uuid=9f28e7cc52db1a855f5c.1404925723.0.0.0,ci=20,abt=1404922692.1405526400%7CBDE,rvct=20%2C10,__mta=219569062.1403575087122.1404923085988.1404923323282.239,__utma=211559370.2068030844.1403575087.1404905929.1404921856.32,__utmz=211559370.1403575087.1.1.utmcsr,__utmv=211559370.|1,rvd=25413813%2C25408685%2C8173880%2C25274919%2C11598389,rus=1,lun=13570244952,lsu=13570244952,ufbanner=4";
+        //private string _cookieString = "uuid=9f28e7cc52db1a855f5c.1404925723.0.0.0, SID=2lhvt8o0egjvfqnlpafprm43o6, ci=20, abt=1404925723.1405526400%7CADE";
+        public string CookieString
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_cookieString))
+                {
+                    CookieCollection cookies = _cookieContainer.GetCookies(new Uri("http://www.meituan.com"));
+                    foreach (Cookie item in cookies)
+                    {
+                        _cookieString += item.ToString() + ";";
+                    }
+
+                    _cookieString = _cookieString.Substring(0, _cookieString.Length - 1);
+                }
+
+                return _cookieString;
+            }
+            set
+            {
+                _cookieString = value;
+            }
+        }
+
         private List<string> ShopIds = new List<string>();
 
         public override void Spider()
         {
             Init();
+
+            _dctDealUrls = new Dictionary<string, List<TuangouUrlModel>>();
 
             foreach (string key in _dctUrls.Keys)
             {
@@ -191,7 +245,16 @@ namespace SpiderLib
                     Url = new PageUrl(string.Format(indexUrlModel.Url.Url + "/page{0}", index))
                 };
 
-                loader.ReadStream(urlModel.Url, _proxy);
+                ResultStatus status = loader.ReadStream(urlModel.Url, string.Empty, _proxy, _cookieContainer);
+
+                //_cookieContainer.GetCookies(
+
+                if (!status.Success)
+                {
+                    //IterateProxy(urlModel.Url);
+                    ChangeCookie(urlModel.Url);
+                }
+
                 PostParams postParams = parser.ParseContent(urlModel.Url, _regexAsynLoadParams, GetPostParams);
 
                 //如果为空，则直接读取页面的数据
@@ -201,7 +264,7 @@ namespace SpiderLib
                 }
                 else
                 {
-                    string pageContent = CommonHelper.HttpHelper.GetResponse(string.Format(_deallistLinkFormat, city), postParams.ToString(), string.Empty, string.Empty, null, null, _proxy, dctXRequestWith);
+                    string pageContent = CommonHelper.HttpHelper.GetResponse(string.Format(_deallistLinkFormat, city), postParams.ToString(), CookieString, string.Empty, null, null, _proxy, dctXRequestWith);
 
                     // 交易的产品信息
                     IList<TuangouUrlModel> deals = parser.ParseContent(pageContent, _regexDeal, GetDealUrl);
@@ -221,13 +284,38 @@ namespace SpiderLib
                 }
             }
 
-            _dctDealUrls.Add(city, lstDeal);
+            if (_dctDealUrls.ContainsKey(city))
+            {
+                _dctDealUrls[city].AddRange(lstDeal);
+            }
+            else
+            {
+                _dctDealUrls.Add(city, lstDeal);
+            }
         }
         /// <summary>
         /// 初始化所有基础数据
         /// </summary>
         private void Init()
         {
+            //string uuidCookie = string.Empty;
+
+            //int size = 1000;
+            //StringBuilder cookie = new StringBuilder(size);
+            //if (InternetGetCookie("http://www.meituan.com", "uuid", cookie, ref size))
+            //{
+            //    uuidCookie = cookie.ToString();
+            //    uuidCookie = uuidCookie.Split('=')[1];
+            //}
+            //else
+            //{
+            //    string error = GetLastError().ToString();
+            //}
+
+            //_cookieContainer.Add(new Cookie("uuid", uuidCookie, string.Empty, ".meituan.com"));
+            //_cookieContainer.Add(new Uri("http://www.meituan.com"), new Cookie("uuid", uuidCookie));
+
+      
             _basicDatas = new List<TuangouBasicDataModel>();
 
             Parser parser = new Parser();
@@ -242,10 +330,19 @@ namespace SpiderLib
             // 获取所有分类的信息
             foreach (var item in UrlDic)
             {
+                _cookieContainer = new System.Net.CookieContainer();
+                _cookieContainer.SetCookies(new Uri(item.Value), _cookieString);
+
                 TuangouBasicDataModel basicData = new TuangouBasicDataModel() { City = item.Key };
 
                 url.Url = item.Value;
-                loader.ReadStream(url, _proxy);
+                ResultStatus status = loader.ReadStream(url, string.Empty, _proxy, _cookieContainer);
+
+                if (!status.Success)
+                {
+                    //IterateProxy(url);
+                    ChangeCookie(url);
+                }
 
                 // 加载分类大类
                 IList<TuangouUrlModel> lstCategoryUrls = parser.ParseContent(url, _regexCategoty, true, GetCategoryUrl);
@@ -257,7 +354,7 @@ namespace SpiderLib
                     {
                         categoryBll.Insert(new CategoryModel() { Name = category.Text, Code = category.Category });
 
-                        if (loader.ReadStream(category.Url, _proxy))
+                        if (loader.ReadStream(category.Url, _proxy, _cookieContainer))
                         {
                             IList<TuangouUrlModel> lstUrls = parser.ParseContent(category.Url, _regexSubCategory, false, GetCategoryUrl);
 
@@ -283,7 +380,7 @@ namespace SpiderLib
                     {
                         regionBll.Insert(new RegionModel() { Name = region.Text, Code = region.Region });
 
-                        if (loader.ReadStream(region.Url, _proxy))
+                        if (loader.ReadStream(region.Url, _proxy, _cookieContainer))
                         {
                             IList<TuangouUrlModel> lstUrls = parser.ParseContent(region.Url, _regexBusinessArea, false, GetRegionUrl);
 
@@ -403,6 +500,85 @@ namespace SpiderLib
         }
 
         /// <summary>
+        /// 遍历代理列表，寻找可用的代理地址
+        /// </summary>
+        /// <param name="urlModel"></param>
+        private void IterateProxy(PageUrl pageUrl)
+        {
+            Loader loader = new Loader();
+
+            IList<string> invailableUri = new List<string>();
+
+            if (ProxyUris != null && ProxyUris.Count > 0)
+            {
+                foreach (string uri in ProxyUris)
+                {
+                    _proxy = new WebProxy(new Uri("http://" + uri));
+
+                    ResultStatus status = loader.ReadStream(pageUrl, string.Empty, _proxy, _cookieContainer);
+                    if (status.Success)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        invailableUri.Add(uri);
+                    }
+                }
+            }
+
+            foreach (string uri in invailableUri)
+            {
+                ProxyUris.Remove(uri);
+            }
+        }
+
+        private void ChangeCookie(PageUrl pageUrl)
+        {
+            //Process.Start(pageUrl.Url);
+
+            Loader loader = new Loader();
+
+            Dictionary<string, string> dctCookie = CommonHelper.FullWebBrowserCookie.GetCookieList(new Uri("http://gz.meituan.com"), false);
+
+            string cookies = CommonHelper.FullWebBrowserCookie.GetCookieInternal(new Uri("http://gz.meituan.com"), false);
+
+            cookies = cookies.Replace(';', ',');
+
+            _cookieString = CommonHelper.HttpHelper.HttpWebRequestGetCookies("http://www.meituan.com/multiact/default//", "1=%7B%22act%22%3A%22%2Findex%2Fvipbubble%22%7D&2=%7B%22act%22%3A%22%2Findex%2Fuserinfo%22%7D&3=%7B%22act%22%3A%22%2Findex%2Fmessage%22%7D&4=%7B%22act%22%3A%22%2Findex%2Frvd%22%7D&5=%7B%22act%22%3A%22%2Findex%2Fnavcart%22%7D&6=%7B%22isshowshops%22%3Atrue%2C%22isshopspage%22%3Afalse%2C%22act%22%3A%22%2Findex%2Fhotqueries%22%7D", cookies, string.Empty, string.Empty, string.Empty, new CommonHelper.FirefoxHttpHeader(), _proxy, null);
+
+            //int size = 1000;
+            //StringBuilder sbcookie = new StringBuilder(size);
+            //if (InternetGetCookie(pageUrl.Url, "ci", sbcookie, ref size))
+            //{
+            //    string uuidCookie = sbcookie.ToString();
+            //    uuidCookie = uuidCookie.Split('=')[1];
+            //}
+
+            //_cookieString = string.Empty;
+
+            //foreach (KeyValuePair<string,string> cookie in dctCookie)
+            //{
+            //    _cookieString += string.Format("{0}={1},", cookie.Key, cookie.Value);
+            //}
+
+
+            //if (!string.IsNullOrEmpty(_cookieString))
+            //{
+            //    _cookieString = _cookieString.Substring(0, _cookieString.Length - 1);
+            //}
+            //_cookieString += "SID=lkjhq4n1hvu1gakhh3ng5b32d3";
+
+            _cookieContainer = new CookieContainer();
+            _cookieContainer.SetCookies(new Uri(pageUrl.Url), _cookieString);
+
+            ResultStatus status = loader.ReadStream(pageUrl, string.Empty, _proxy, _cookieContainer);
+
+
+            
+        }
+
+        /// <summary>
         /// 存储店铺的信息
         /// </summary>
         /// <param name="model"></param>
@@ -411,7 +587,7 @@ namespace SpiderLib
             IDictionary<string, string> dctXRequestWith = new Dictionary<string, string>();
             dctXRequestWith.Add("X-Requested-With", "XMLHttpRequest");
 
-            string pageContent = CommonHelper.HttpHelper.GetResponse(string.Format(_poilistLinkFromat, model.Url.Name), string.Empty, string.Empty, string.Empty, null, null, _proxy, dctXRequestWith);
+            string pageContent = CommonHelper.HttpHelper.GetResponse(string.Format(_poilistLinkFromat, model.Url.Name), string.Empty, CookieString, string.Empty, null, null, _proxy, dctXRequestWith);
             Dictionary<string, IList<Meituan.MTShopModel>> dctShopModel = JsonConvert.DeserializeObject<Dictionary<string, IList<Meituan.MTShopModel>>>(pageContent);
 
             if (dctShopModel != null && dctShopModel.Count > 0)

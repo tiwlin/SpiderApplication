@@ -40,7 +40,7 @@ namespace SpiderApplication
             meituanModel.UrlDic.Add("gz", "http://gz.meituan.com/category");
             //WebProxy proxy = new WebProxy(new Uri("http://58.67.143.165:63000"));
             //meituanModel.Proxy = proxy;
-            //meituanModel.Proxy = null;
+            meituanModel.Proxy = null;
             ThreadManager.UrlList.Add(meituanModel);
 
 
