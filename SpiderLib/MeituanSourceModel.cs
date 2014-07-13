@@ -25,7 +25,7 @@ namespace SpiderLib
         [DllImport("kernel32.dll")]
         public static extern Int32 GetLastError();
 
-        private static readonly bool _isStore = true;
+        private static readonly bool _isStore = false;
 
         private string[] _categories = { "自助餐", "美食", "电影", "休闲娱乐", "丽人", "生活服务", "酒店", "旅游", "购物", "抽奖" };
 
@@ -35,9 +35,16 @@ namespace SpiderLib
 
         private static readonly string _domainFormat = "http://{0}.meituan.com";
 
+        /// <summary>
+        /// 交易产品的详细页面地址模板
+        /// </summary>
         private static readonly string _deallistLinkFormat = "http://{0}.meituan.com/index/deallist";
 
+        /// <summary>
+        /// 获取商家的信息地址模版
+        /// </summary>
         private static readonly string _poilistLinkFromat = "http://www.meituan.com/deal/poilist/{0}";
+       
         private static readonly string _urlTemplate = "http://{0}.meituan.com/category/{1}/{2}";
 
         private static readonly string[] _arrCookieKey = new string[4] { "uuid", "SID", "ci", "abt" };
@@ -225,100 +232,11 @@ namespace SpiderLib
             base.Spider();
         }
         
-        private void AnalyzeShopInformation(string city, TuangouUrlModel indexUrlModel)
-        {
-            bool isFinish = false;
-
-            List<TuangouUrlModel> lstDeal = new List<TuangouUrlModel>();
-
-            Loader loader = new Loader();
-            Parser parser = new Parser();
-
-            IDictionary<string, string> dctXRequestWith = new Dictionary<string, string>();
-            dctXRequestWith.Add("X-Requested-With", "XMLHttpRequest");
-
-            int index = 0;
-            while (!isFinish)
-            {
-                index++;
-                TuangouUrlModel urlModel = new TuangouUrlModel() 
-                { 
-                    Region = indexUrlModel.Region, 
-                    Category = indexUrlModel.Category,
-                    Url = new PageUrl(string.Format(indexUrlModel.Url.Url + "/page{0}", index))
-                };
-
-                ResultStatus status = loader.ReadStream(urlModel.Url, string.Empty, _proxy, _cookieContainer);
-
-                //_cookieContainer.GetCookies(
-
-                if (!status.Success)
-                {
-                    //IterateProxy(urlModel.Url);
-                    ChangeCookie(urlModel.Url);
-                }
-
-                PostParams postParams = parser.ParseContent(urlModel.Url, _regexAsynLoadParams, GetPostParams);
-
-                //如果为空，则直接读取页面的数据
-                if (postParams == null)
-                {
-                    isFinish = true;
-                }
-                else
-                {
-                    string pageContent = CommonHelper.HttpHelper.GetResponse(string.Format(_deallistLinkFormat, city), postParams.ToString(), CookieString, string.Empty, null, null, _proxy, dctXRequestWith);
-
-                    // 交易的产品信息
-                    IList<TuangouUrlModel> deals = parser.ParseContent(pageContent, _regexDeal, GetDealUrl);
-
-                    if (deals != null && deals.Count > 0)
-                    {
-                        ((List<TuangouUrlModel>)deals).ForEach(b => { b.Category = urlModel.Category; b.Region = urlModel.Region; });
-                        lstDeal.AddRange(deals);
-                    }
-
-                    // 获取商家的信息
-                    foreach (TuangouUrlModel item in deals)
-                    {
-                        InsertShopInformation(item);
-                    }
-
-                }
-            }
-
-            if (_dctDealUrls.ContainsKey(city))
-            {
-                _dctDealUrls[city].AddRange(lstDeal);
-            }
-            else
-            {
-                _dctDealUrls.Add(city, lstDeal);
-            }
-        }
         /// <summary>
         /// 初始化所有基础数据
         /// </summary>
         private void Init()
         {
-            //string uuidCookie = string.Empty;
-
-            //int size = 1000;
-            //StringBuilder cookie = new StringBuilder(size);
-            //if (InternetGetCookie("http://www.meituan.com", "uuid", cookie, ref size))
-            //{
-            //    uuidCookie = cookie.ToString();
-            //    uuidCookie = uuidCookie.Split('=')[1];
-            //}
-            //else
-            //{
-            //    string error = GetLastError().ToString();
-            //}
-
-            //_cookieContainer.Add(new Cookie("uuid", uuidCookie, string.Empty, ".meituan.com"));
-            //_cookieContainer.Add(new Uri("http://www.meituan.com"), new Cookie("uuid", uuidCookie));
-
-      
             _basicDatas = new List<TuangouBasicDataModel>();
 
             Parser parser = new Parser();
@@ -558,35 +476,88 @@ namespace SpiderLib
 
             _cookieString = CommonHelper.HttpHelper.HttpWebRequestGetCookies("http://www.meituan.com/multiact/default//", "1=%7B%22act%22%3A%22%2Findex%2Fvipbubble%22%7D&2=%7B%22act%22%3A%22%2Findex%2Fuserinfo%22%7D&3=%7B%22act%22%3A%22%2Findex%2Fmessage%22%7D&4=%7B%22act%22%3A%22%2Findex%2Frvd%22%7D&5=%7B%22act%22%3A%22%2Findex%2Fnavcart%22%7D&6=%7B%22isshowshops%22%3Atrue%2C%22isshopspage%22%3Afalse%2C%22act%22%3A%22%2Findex%2Fhotqueries%22%7D", cookies, string.Empty, string.Empty, string.Empty, new CommonHelper.FirefoxHttpHeader(), _proxy, null);
 
-            //int size = 1000;
-            //StringBuilder sbcookie = new StringBuilder(size);
-            //if (InternetGetCookie(pageUrl.Url, "ci", sbcookie, ref size))
-            //{
-            //    string uuidCookie = sbcookie.ToString();
-            //    uuidCookie = uuidCookie.Split('=')[1];
-            //}
-
-            //_cookieString = string.Empty;
-
-            //foreach (KeyValuePair<string,string> cookie in dctCookie)
-            //{
-            //    _cookieString += string.Format("{0}={1},", cookie.Key, cookie.Value);
-            //}
-
-
-            //if (!string.IsNullOrEmpty(_cookieString))
-            //{
-            //    _cookieString = _cookieString.Substring(0, _cookieString.Length - 1);
-            //}
-            //_cookieString += "SID=lkjhq4n1hvu1gakhh3ng5b32d3";
-
             _cookieContainer = new CookieContainer();
             _cookieContainer.SetCookies(new Uri(pageUrl.Url), _cookieString);
 
             ResultStatus status = loader.ReadStream(pageUrl, string.Empty, _proxy, _cookieContainer);
+        }
 
 
-            
+        /// <summary>
+        /// 分析页面数据
+        /// </summary>
+        /// <param name="city"></param>
+        /// <param name="indexUrlModel"></param>
+        private void AnalyzeShopInformation(string city, TuangouUrlModel indexUrlModel)
+        {
+            bool isFinish = false;
+
+            List<TuangouUrlModel> lstDeal = new List<TuangouUrlModel>();
+
+            Loader loader = new Loader();
+            Parser parser = new Parser();
+
+            IDictionary<string, string> dctXRequestWith = new Dictionary<string, string>();
+            dctXRequestWith.Add("X-Requested-With", "XMLHttpRequest");
+
+            int index = 0;
+            while (!isFinish)
+            {
+                index++;
+                TuangouUrlModel urlModel = new TuangouUrlModel()
+                {
+                    Region = indexUrlModel.Region,
+                    Category = indexUrlModel.Category,
+                    Url = new PageUrl(string.Format(indexUrlModel.Url.Url + "/page{0}", index))
+                };
+
+                ResultStatus status = loader.ReadStream(urlModel.Url, string.Empty, _proxy, _cookieContainer);
+
+                //_cookieContainer.GetCookies(
+
+                if (!status.Success)
+                {
+                    //IterateProxy(urlModel.Url);
+                    ChangeCookie(urlModel.Url);
+                }
+
+                PostParams postParams = parser.ParseContent(urlModel.Url, _regexAsynLoadParams, GetPostParams);
+
+                //如果为空，则直接读取页面的数据
+                if (postParams == null)
+                {
+                    isFinish = true;
+                }
+                else
+                {
+                    string pageContent = CommonHelper.HttpHelper.GetResponse(string.Format(_deallistLinkFormat, city), postParams.ToString(), CookieString, string.Empty, null, null, _proxy, dctXRequestWith);
+
+                    // 交易的产品信息
+                    IList<TuangouUrlModel> deals = parser.ParseContent(pageContent, _regexDeal, GetDealUrl);
+
+                    if (deals != null && deals.Count > 0)
+                    {
+                        ((List<TuangouUrlModel>)deals).ForEach(b => { b.Category = urlModel.Category; b.Region = urlModel.Region; });
+                        lstDeal.AddRange(deals);
+                    }
+
+                    // 获取商家的信息
+                    foreach (TuangouUrlModel item in deals)
+                    {
+                        InsertShopInformation(item);
+                    }
+
+                }
+            }
+
+            if (_dctDealUrls.ContainsKey(city))
+            {
+                _dctDealUrls[city].AddRange(lstDeal);
+            }
+            else
+            {
+                _dctDealUrls.Add(city, lstDeal);
+            }
         }
 
         /// <summary>
