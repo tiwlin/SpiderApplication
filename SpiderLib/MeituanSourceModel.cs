@@ -25,6 +25,8 @@ namespace SpiderLib
         [DllImport("kernel32.dll")]
         public static extern Int32 GetLastError();
 
+        private static readonly bool _isStore = true;
+
         private string[] _categories = { "自助餐", "美食", "电影", "休闲娱乐", "丽人", "生活服务", "酒店", "旅游", "购物", "抽奖" };
 
         private string[] _regions = { "越秀区", "天河区", "番禺区", "海珠区", "白云区", "荔湾区", "黄埔区", "萝岗区", "增城市", "花都区", "从化市", "南沙区" };
@@ -36,6 +38,7 @@ namespace SpiderLib
         private static readonly string _deallistLinkFormat = "http://{0}.meituan.com/index/deallist";
 
         private static readonly string _poilistLinkFromat = "http://www.meituan.com/deal/poilist/{0}";
+        private static readonly string _urlTemplate = "http://{0}.meituan.com/category/{1}/{2}";
 
         private static readonly string[] _arrCookieKey = new string[4] { "uuid", "SID", "ci", "abt" };
 
@@ -47,7 +50,7 @@ namespace SpiderLib
         /// <summary>
         /// 所有市区县的正则表达式
         /// </summary>
-        private static string _regexRegion = @"(?is)<a[^>]*?href=(['""]?)(?<url>[^'""\s>]+/category/all/(?<key>\w+))\1[^>]*>(?<text>([\w]+[市区县]))<span>(?<count>(\d+))</span></a>";
+        private static string _regexRegion = @"(?is)<a[^>]*?href=(['""]?)(?<url>[^'""\s>]+/category/all/(?<key>\w+))\1[^>]*>(?<text>([\w]+[市区县沟]))<span>(?<count>(\d+))</span></a>";
 
         /// <summary>
         /// 所有分类的正则表达式
@@ -322,11 +325,6 @@ namespace SpiderLib
             Loader loader = new Loader();
             PageUrl url = new PageUrl();
 
-            //WebProxy proxy = new WebProxy("172.16.1.2:8080", false);
-            //proxy.Credentials = new NetworkCredential("frankielin@schmidtelectronics.com", "tiwlintiw520");
-
-            //proxy = null;
-
             // 获取所有分类的信息
             foreach (var item in UrlDic)
             {
@@ -352,7 +350,8 @@ namespace SpiderLib
                     CategoryBLL categoryBll = new CategoryBLL();
                     foreach (TuangouUrlModel category in lstCategoryUrls)
                     {
-                        categoryBll.Insert(new CategoryModel() { Name = category.Text, Code = category.Category });
+                        if (_isStore)
+                            categoryBll.Insert(new CategoryModel() { Name = category.Text, Code = category.Category });
 
                         if (loader.ReadStream(category.Url, _proxy, _cookieContainer))
                         {
@@ -362,7 +361,9 @@ namespace SpiderLib
                             foreach (TuangouUrlModel urlModel in lstUrls)
                             {
                                 CategoryModel model = new CategoryModel() { Name = urlModel.Text, Code = urlModel.Category, ParentCategory = category.Category };
-                                categoryBll.Insert(model);
+                               
+                                if (_isStore)
+                                    categoryBll.Insert(model);
                             }
 
                             basicData.DctCategories.Add(category.Category, lstUrls.Select(b => b.Category).ToList());
@@ -371,14 +372,15 @@ namespace SpiderLib
                 }
 
                 // 加载区域
-                IList<TuangouUrlModel> lstRegionUrls = parser.ParseContent(url, _regexRegion, true, GetRegionUrl);
+                IList<TuangouUrlModel> lstRegionUrls = parser.ParseContent(url, _regexRegion, false, GetRegionUrl);
                 if (lstRegionUrls != null && lstRegionUrls.Count > 0)
                 {
                     basicData.DctRegions = new Dictionary<string, IList<string>>();
                     RegionBLL regionBll = new RegionBLL();
                     foreach (TuangouUrlModel region in lstRegionUrls)
                     {
-                        regionBll.Insert(new RegionModel() { Name = region.Text, Code = region.Region });
+                        if (_isStore)
+                            regionBll.Insert(new RegionModel() { Name = region.Text, Code = region.Region });
 
                         if (loader.ReadStream(region.Url, _proxy, _cookieContainer))
                         {
@@ -388,7 +390,9 @@ namespace SpiderLib
                             foreach (TuangouUrlModel urlModel in lstUrls)
                             {
                                 RegionModel model = new RegionModel() { Name = urlModel.Text, Code = urlModel.Region, ParentRegion = region.Region };
-                                regionBll.Insert(model);
+
+                                if (_isStore)
+                                    regionBll.Insert(model);
                             }
 
                             basicData.DctRegions.Add(region.Region, lstUrls.Select(b => b.Region).ToList());
@@ -397,6 +401,7 @@ namespace SpiderLib
                 }
 
                 _basicDatas.Add(basicData);
+
             }
 
             InitUrls();
@@ -408,7 +413,7 @@ namespace SpiderLib
         private void InitPartUrls()
         {
             //http://gz.meituan.com/category/xican/tianhequ
-            string urlTemplate = "http://gz.meituan.com/category/{0}/{1}";
+            //string urlTemplate = "http://gz.meituan.com/category/{0}/{1}";
             _urls = new List<TuangouUrlModel>();
             _dctUrls = new Dictionary<string, IList<TuangouUrlModel>>();
             InitUrlsBLL bll = new InitUrlsBLL();
@@ -430,7 +435,7 @@ namespace SpiderLib
                                     {
                                         Category = categoryKey,
                                         Region = regionKey,
-                                        Url = new PageUrl() { Url = string.Format(urlTemplate, category, region) }
+                                        Url = new PageUrl() { Url = string.Format(_urlTemplate, item.City, category, region) }
                                     };
 
                                     InitUrlsModel model = new InitUrlsModel()
@@ -440,7 +445,8 @@ namespace SpiderLib
                                         Url = urlModel.Url.Url
                                     };
 
-                                    bll.Insert(model);
+                                    if (_isStore)
+                                        bll.Insert(model);
 
                                     urls.Add(urlModel);
                                     _urls.Add(urlModel);
@@ -459,7 +465,7 @@ namespace SpiderLib
         private void InitUrls()
         {
             //http://gz.meituan.com/category/xican/tianhequ
-            string urlTemplate = "http://gz.meituan.com/category/{0}/{1}";
+            //string urlTemplate = "http://{0}.meituan.com/category/{1}/{2}";
             _urls = new List<TuangouUrlModel>();
             _dctUrls = new Dictionary<string, IList<TuangouUrlModel>>();
             InitUrlsBLL bll = new InitUrlsBLL();
@@ -477,7 +483,7 @@ namespace SpiderLib
                             {
                                 Category = categoryKey,
                                 Region = regionKey,
-                                Url = new PageUrl() { Url = string.Format(urlTemplate, categoryKey, regionKey) }
+                                Url = new PageUrl() { Url = string.Format(_urlTemplate, item.City, categoryKey, regionKey) }
                             };
 
                             InitUrlsModel model = new InitUrlsModel()
@@ -487,7 +493,8 @@ namespace SpiderLib
                                 Url = urlModel.Url.Url
                             };
 
-                            bll.Insert(model);
+                            if (_isStore)
+                                bll.Insert(model);
 
                             urls.Add(urlModel);
                             _urls.Add(urlModel);
@@ -533,6 +540,10 @@ namespace SpiderLib
             }
         }
 
+        /// <summary>
+        /// 修改当前网站的cookie值
+        /// </summary>
+        /// <param name="pageUrl"></param>
         private void ChangeCookie(PageUrl pageUrl)
         {
             //Process.Start(pageUrl.Url);
@@ -588,7 +599,18 @@ namespace SpiderLib
             dctXRequestWith.Add("X-Requested-With", "XMLHttpRequest");
 
             string pageContent = CommonHelper.HttpHelper.GetResponse(string.Format(_poilistLinkFromat, model.Url.Name), string.Empty, CookieString, string.Empty, null, null, _proxy, dctXRequestWith);
-            Dictionary<string, IList<Meituan.MTShopModel>> dctShopModel = JsonConvert.DeserializeObject<Dictionary<string, IList<Meituan.MTShopModel>>>(pageContent);
+            Dictionary<string, IList<Meituan.MTShopModel>> dctShopModel = null;
+
+            try
+            {
+                dctShopModel = JsonConvert.DeserializeObject<Dictionary<string, IList<Meituan.MTShopModel>>>(pageContent);
+            }
+            catch (Exception ex)
+            {
+                //CommonHelper.LogHelper.Log.Error(ex.Message);
+
+                return;
+            }
 
             if (dctShopModel != null && dctShopModel.Count > 0)
             {
@@ -601,7 +623,9 @@ namespace SpiderLib
                         item.city = item.city == 0 ? Int32.Parse(key) : item.city;
                         item.category = model.Category;
                         item.region = model.Region;
-                        bll.Insert(item);
+
+                        if (_isStore)
+                            bll.Insert(item);
                     }
                 }
             }
