@@ -8,7 +8,7 @@ using System.Data;
 
 using Microsoft.Practices.EnterpriseLibrary.Validation;
 using DALHelper;
-using ITourCommon;
+using CommonHelper;
 
 namespace Model
 {

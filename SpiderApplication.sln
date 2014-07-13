@@ -28,6 +28,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BLL", "BLL\BLL.csproj", "{F
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTest", "UnitTest\UnitTest.csproj", "{A05255FE-4B76-4C8C-B043-963254080181}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DALHelper", "DALHelper\DALHelper.csproj", "{F47C588E-D1ED-41C7-8170-38A3C6174D0C}"
+EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = SpiderApplication.vsmdi
@@ -141,6 +143,16 @@ Global
 		{A05255FE-4B76-4C8C-B043-963254080181}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{A05255FE-4B76-4C8C-B043-963254080181}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{A05255FE-4B76-4C8C-B043-963254080181}.Release|x86.ActiveCfg = Release|Any CPU
+		{F47C588E-D1ED-41C7-8170-38A3C6174D0C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F47C588E-D1ED-41C7-8170-38A3C6174D0C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F47C588E-D1ED-41C7-8170-38A3C6174D0C}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{F47C588E-D1ED-41C7-8170-38A3C6174D0C}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{F47C588E-D1ED-41C7-8170-38A3C6174D0C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F47C588E-D1ED-41C7-8170-38A3C6174D0C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F47C588E-D1ED-41C7-8170-38A3C6174D0C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F47C588E-D1ED-41C7-8170-38A3C6174D0C}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{F47C588E-D1ED-41C7-8170-38A3C6174D0C}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{F47C588E-D1ED-41C7-8170-38A3C6174D0C}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
